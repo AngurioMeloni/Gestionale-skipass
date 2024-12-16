@@ -1,21 +1,21 @@
 <?php
 session_start();
 
-// Dummy credentials for demonstration purposes
-$valid_username = 'user';
-$valid_password = 'password';
-
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $username = $_POST['username'];
     $password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
 
-    if ($username === $valid_username && $password === $valid_password) {
-        $_SESSION['loggedin'] = true;
+    if ($password !== $confirm_password) {
+        $error = 'Passwords do not match';
+    } else {
+        // Here you would normally save the user to a database
+        // For demonstration purposes, we'll just set a session variable
+        $_SESSION['registered'] = true;
         $_SESSION['username'] = $username;
+        $_SESSION['loggedin'] = true;
         header('Location: dashboard.php'); // Redirect to the dashboard page
         exit;
-    } else {
-        $error = 'Invalid username or password';
     }
 }
 ?>
@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Register</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
@@ -72,11 +72,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 <body>
     <div class="container">
-        <h2 class="center-align">Login</h2>
+        <h2 class="center-align">Register</h2>
         <?php if (isset($error)): ?>
             <div class="card-panel red lighten-2 white-text"><?php echo $error; ?></div>
         <?php endif; ?>
-        <form action="login.php" method="post">
+        <form action="register.php" method="post">
             <div class="input-field">
                 <i class="fas fa-user prefix"></i>
                 <input type="text" id="username" name="username" required>
@@ -87,9 +87,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <input type="password" id="password" name="password" required>
                 <label for="password">Password</label>
             </div>
-            <button type="submit" class="btn waves-effect waves-light btn-block">Login</button>
+            <div class="input-field">
+                <i class="fas fa-lock prefix"></i>
+                <input type="password" id="confirm_password" name="confirm_password" required>
+                <label for="confirm_password">Confirm Password</label>
+            </div>
+            <button type="submit" class="btn waves-effect waves-light btn-block">Register</button>
         </form>
-        <p class="center-align">Non hai un account? <a href="register.php">Registrati qui</a></p>
+        <p class="center-align">Hai già un account? <a href="login.php">Accedi qui</a></p>
     </div>
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>

@@ -1,23 +1,48 @@
 <?php
 session_start();
 
-// Dummy credentials for demonstration purposes
-$valid_username = 'user';
-$valid_password = 'password';
+// Connessione al database
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "skipassmanagement";
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = $_POST['username'];
+    $email = $_POST['email'];
     $password = $_POST['password'];
 
-    if ($username === $valid_username && $password === $valid_password) {
-        $_SESSION['loggedin'] = true;
-        $_SESSION['username'] = $username;
-        header('Location: dashboard.php'); // Redirect to the dashboard page
-        exit;
+    $sql = "SELECT * FROM Users WHERE email = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows == 1) {
+        $row = $result->fetch_assoc();
+        if (password_verify($password, $row['password'])) {
+            $_SESSION['loggedin'] = true;
+            $_SESSION['username'] = $row['email'];
+            $_SESSION['name'] = $row['name'];
+            $_SESSION['role'] = $row['role']; // Memorizza il ruolo nella sessione
+            header('Location: dashboard.php');
+            exit;
+        } else {
+            $error = "Password errata.";
+        }
     } else {
-        $error = 'Invalid username or password';
+        $error = "Nessun utente trovato con questa email.";
     }
+
+    $stmt->close();
 }
+
+$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -78,9 +103,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <?php endif; ?>
         <form action="login.php" method="post">
             <div class="input-field">
-                <i class="fas fa-user prefix"></i>
-                <input type="text" id="username" name="username" required>
-                <label for="username">Username</label>
+                <i class="fas fa-envelope prefix"></i>
+                <input type="email" id="email" name="email" required>
+                <label for="email">Email</label>
             </div>
             <div class="input-field">
                 <i class="fas fa-lock prefix"></i>

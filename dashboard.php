@@ -20,8 +20,9 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #f5f5f5;
-            position: relative;
-            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
         }
         h1, h5 {
             font-family: 'Montserrat', sans-serif;
@@ -36,7 +37,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%;
+            height: 100vh;
             z-index: 1;
         }
         .carousel-inner img {
@@ -71,25 +72,57 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
         .card-body {
             flex: 1;
         }
+        .welcome-text {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <!-- Inizio Slider di Immagini -->
-    <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
+    <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel" data-interval="3000">
         <ol class="carousel-indicators">
             <li data-target="#carouselExampleIndicators" data-slide-to="0" class="active"></li>
             <li data-target="#carouselExampleIndicators" data-slide-to="1"></li>
             <li data-target="#carouselExampleIndicators" data-slide-to="2"></li>
+            <li data-target="#carouselExampleIndicators" data-slide-to="3"></li>
+            <li data-target="#carouselExampleIndicators" data-slide-to="4"></li>
+            <li data-target="#carouselExampleIndicators" data-slide-to="5"></li>
+            <li data-target="#carouselExampleIndicators" data-slide-to="6"></li>
+            <li data-target="#carouselExampleIndicators" data-slide-to="7"></li>
+            <li data-target="#carouselExampleIndicators" data-slide-to="8"></li>
+            <li data-target="#carouselExampleIndicators" data-slide-to="9"></li>
         </ol>
         <div class="carousel-inner">
             <div class="carousel-item active">
-                <img src="https://via.placeholder.com/800x400" class="d-block w-100" alt="...">
+                <img src="img/1.jpg" class="d-block w-100" alt="Image 1">
             </div>
             <div class="carousel-item">
-                <img src="https://via.placeholder.com/800x400" class="d-block w-100" alt="...">
+                <img src="img/2.jpg" class="d-block w-100" alt="Image 2">
             </div>
             <div class="carousel-item">
-                <img src="https://via.placeholder.com/800x400" class="d-block w-100" alt="...">
+                <img src="img/3.jpg" class="d-block w-100" alt="Image 3">
+            </div>
+            <div class="carousel-item">
+                <img src="img/4.jpg" class="d-block w-100" alt="Image 4">
+            </div>
+            <div class="carousel-item">
+                <img src="img/5.jpg" class="d-block w-100" alt="Image 5">
+            </div>
+            <div class="carousel-item">
+                <img src="img/6.jpg" class="d-block w-100" alt="Image 6">
+            </div>
+            <div class="carousel-item">
+                <img src="img/7.jpg" class="d-block w-100" alt="Image 7">
+            </div>
+            <div class="carousel-item">
+                <img src="img/8.jpg" class="d-block w-100" alt="Image 8">
+            </div>
+            <div class="carousel-item">
+                <img src="img/9.jpg" class="d-block w-100" alt="Image 9">
+            </div>
+            <div class="carousel-item">
+                <img src="img/10.jpg" class="d-block w-100" alt="Image 10">
             </div>
         </div>
         <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
@@ -104,8 +137,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     <!-- Fine Slider di Immagini -->
 
     <div class="container">
-        <h1 class="text-center mb-5">Dashboard</h1>
-        <p class="text-center">Benvenuto, <?php echo htmlspecialchars($_SESSION['username']); ?>!</p>
+        <p class="text-center welcome-text">Benvenuto, <?php echo htmlspecialchars($_SESSION['name']); ?>!</p>
         
         <div class="row">
             <div class="col-md-4 mb-4">
@@ -141,7 +173,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
                         <i class="fas fa-users"></i>
                         <h5 class="card-title">Gestione utenti</h5>
                         <ul class="list-unstyled">
-                            <li><a href="#" class="btn btn-link">Database clienti</a></li>
+                            <li><a href="databaseC.php" class="btn btn-link">Database clienti</a></li>
                             <li><a href="#" class="btn btn-link">Fidelity program</a></li>
                             <li><a href="#" class="btn btn-link">Gestione gruppi</a></li>
                         </ul>

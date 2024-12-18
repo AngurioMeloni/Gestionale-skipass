@@ -1,23 +1,54 @@
 <?php
 session_start();
 
+// Connessione al database
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "skipassmanagement";
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = $_POST['username'];
+    $name = $_POST['name'];
+    $surname = $_POST['surname'];
+    $email = $_POST['email'];
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
+    $role = $_POST['role'];
+    $phone_number = $_POST['phone_number'];
+    $date_of_birth = $_POST['date_of_birth'];
 
     if ($password !== $confirm_password) {
         $error = 'Passwords do not match';
     } else {
-        // Here you would normally save the user to a database
-        // For demonstration purposes, we'll just set a session variable
-        $_SESSION['registered'] = true;
-        $_SESSION['username'] = $username;
-        $_SESSION['loggedin'] = true;
-        header('Location: dashboard.php'); // Redirect to the dashboard page
-        exit;
+        // Hash della password
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+        // Inserimento dell'utente nel database
+        $stmt = $conn->prepare("INSERT INTO Users (name, surname, email, password, role, phone_number, date_of_birth) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssssss", $name, $surname, $email, $hashed_password, $role, $phone_number, $date_of_birth);
+
+        if ($stmt->execute()) {
+            $_SESSION['registered'] = true;
+            $_SESSION['username'] = $email;
+            $_SESSION['name'] = $name;
+            $_SESSION['loggedin'] = true;
+            header('Location: dashboard.php'); // Redirect to the dashboard page
+            exit;
+        } else {
+            $error = 'Error: ' . $stmt->error;
+        }
+
+        $stmt->close();
     }
 }
+
+$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -79,8 +110,33 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <form action="register.php" method="post">
             <div class="input-field">
                 <i class="fas fa-user prefix"></i>
-                <input type="text" id="username" name="username" required>
-                <label for="username">Username</label>
+                <input type="text" id="name" name="name" required>
+                <label for="name">Name</label>
+            </div>
+            <div class="input-field">
+                <i class="fas fa-user prefix"></i>
+                <input type="text" id="surname" name="surname" required>
+                <label for="surname">Surname</label>
+            </div>
+            <div class="input-field">
+                <i class="fas fa-calendar-alt prefix"></i>
+                <input type="date" id="date_of_birth" name="date_of_birth" required>
+                <label for="date_of_birth">Date of Birth</label>
+            </div>
+            <div class="input-field">
+                <i class="fas fa-envelope prefix"></i>
+                <input type="email" id="email" name="email" required>
+                <label for="email">Email</label>
+            </div>
+            <div class="input-field">
+                <i class="fas fa-user-tag prefix"></i>
+                <input type="text" id="role" name="role" placeholder="cliente/amministratore" required>
+                <label for="role">Role</label>
+            </div>
+            <div class="input-field">
+                <i class="fas fa-phone prefix"></i>
+                <input type="text" id="phone_number" name="phone_number" required>
+                <label for="phone_number">Phone Number</label>
             </div>
             <div class="input-field">
                 <i class="fas fa-lock prefix"></i>

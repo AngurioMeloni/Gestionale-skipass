@@ -1,13 +1,13 @@
 <?php
 session_start();
 
-// Verifica se l'utente è loggato e se è un amministratore
+// Verifica se l'utente è loggato e se è un amministratore o un operatore
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     header('Location: login.php');
     exit;
 }
 
-if ($_SESSION['role'] !== 'amministratore') {
+if ($_SESSION['role'] !== 'amministratore' && $_SESSION['role'] !== 'operatore') {
     header('Location: dashboard.php');
     exit;
 }
@@ -24,8 +24,8 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Recupera tutti i clienti dal database
-$sql = "SELECT * FROM Users WHERE role = 'cliente'";
+// Recupera tutti gli utenti dal database
+$sql = "SELECT * FROM Users";
 $result = $conn->query($sql);
 
 ?>
@@ -35,7 +35,7 @@ $result = $conn->query($sql);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Database Clienti</title>
+    <title>Database Utenti</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
@@ -60,6 +60,8 @@ $result = $conn->query($sql);
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 90%;
+            overflow-x: auto;
         }
         table {
             width: 100%;
@@ -98,6 +100,7 @@ $result = $conn->query($sql);
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s;
+            margin-bottom: 20px;
         }
         .btn-refresh:hover {
             background-color: #0056b3;
@@ -106,43 +109,45 @@ $result = $conn->query($sql);
 </head>
 <body>
     <div class="container fade-in">
-        <h1 class="text-center">Database Clienti</h1>
+        <h1 class="text-center">Database Utenti</h1>
         <button class="btn-refresh" onclick="refreshTable()">Aggiorna</button>
-        <table class="table table-bordered table-hover">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nome</th>
-                    <th>Cognome</th>
-                    <th>Email</th>
-                    <th>Password</th>
-                    <th>Ruolo</th>
-                    <th>Numero di Telefono</th>
-                    <th>Data di Nascita</th>
-                </tr>
-            </thead>
-            <tbody id="clientTable">
-                <?php
-                if ($result->num_rows > 0) {
-                    while($row = $result->fetch_assoc()) {
-                        echo "<tr>
-                                <td>{$row['id']}</td>
-                                <td>{$row['name']}</td>
-                                <td>{$row['surname']}</td>
-                                <td>{$row['email']}</td>
-                                <td>{$row['password']}</td>
-                                <td>{$row['role']}</td>
-                                <td>{$row['phone_number']}</td>
-                                <td>{$row['date_of_birth']}</td>
-                              </tr>";
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Cognome</th>
+                        <th>Email</th>
+                        <th>Password</th>
+                        <th>Ruolo</th>
+                        <th>Numero di Telefono</th>
+                        <th>Data di Nascita</th>
+                    </tr>
+                </thead>
+                <tbody id="clientTable">
+                    <?php
+                    if ($result->num_rows > 0) {
+                        while($row = $result->fetch_assoc()) {
+                            echo "<tr>
+                                    <td>{$row['id']}</td>
+                                    <td>{$row['name']}</td>
+                                    <td>{$row['surname']}</td>
+                                    <td>{$row['email']}</td>
+                                    <td>{$row['password']}</td>
+                                    <td>{$row['role']}</td>
+                                    <td>{$row['phone_number']}</td>
+                                    <td>{$row['date_of_birth']}</td>
+                                  </tr>";
+                        }
+                    } else {
+                        echo "<tr><td colspan='8' class='text-center'>Nessun utente trovato</td></tr>";
                     }
-                } else {
-                    echo "<tr><td colspan='8' class='text-center'>Nessun cliente trovato</td></tr>";
-                }
-                $conn->close();
-                ?>
-            </tbody>
-        </table>
+                    $conn->close();
+                    ?>
+                </tbody>
+            </table>
+        </div>
     </div>
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>

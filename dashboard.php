@@ -146,7 +146,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
                         <i class="fas fa-ticket-alt"></i>
                         <h5 class="card-title">Vendita e gestione degli skipass</h5>
                         <ul class="list-unstyled">
-                            <li><a href="#" class="btn btn-link">Emissione di skipass</a></li>
+                            <li><a href="emission.php" class="btn btn-link">Emissione di skipass</a></li>
                             <li><a href="#" class="btn btn-link">Personalizzazione degli skipass</a></li>
                             <li><a href="#" class="btn btn-link">Prenotazioni online</a></li>
                             <li><a href="#" class="btn btn-link">Ricariche online</a></li>

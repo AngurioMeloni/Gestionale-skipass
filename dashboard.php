@@ -146,7 +146,9 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
                         <i class="fas fa-chart-line"></i>
                         <h5 class="card-title">Amministrazione e reportistica</h5>
                         <ul class="list-unstyled">
-                            <li><a href="#" class="btn btn-link">Report finanziari</a></li>
+                            <li class="nav-item">
+                            <a class="nav-link" href="finanza.php">Report Finanziari</a>
+                            </li>
                             <li><a href="#" class="btn btn-link">Analisi dati</a></li>
                             <li><a href="#" class="btn btn-link">Gestione fiscale</a></li>
                         </ul>

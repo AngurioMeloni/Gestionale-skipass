@@ -1,84 +1,36 @@
 <?php
-// filepath: /c:/xampp/htdocs/5IE-TEP/Gestionale-skipass/emission.php
+// filepath: /c:/xampp/htdocs/Gestionale-skipass/emission.php
 
-// Abilitare la visualizzazione degli errori (solo per sviluppo)
+// Abilita la visualizzazione degli errori per debug
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-require 'config.php'; // Include il file di connessione al database
+session_start();
 
-// Gestione Aggiungi SkiPass
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_skipass'])) {
-    // Sanitizzazione dei dati di input
-    $skipass_price_id = intval($_POST['skipass_price_id']);
-    $validity_start_date = htmlspecialchars(trim($_POST['validity_start_date']));
-    $validity_end_date = htmlspecialchars(trim($_POST['validity_end_date']));
-    $area = htmlspecialchars(trim($_POST['area']));
-    $user_id = intval($_POST['user_id']);
-    $status = htmlspecialchars(trim($_POST['status']));
-
-    // Validazione dei dati
-    $errors = [];
-    if (empty($validity_start_date)) {
-        $errors[] = "La data di inizio è richiesta.";
-    }
-    if (empty($validity_end_date)) {
-        $errors[] = "La data di fine è richiesta.";
-    }
-    if (!in_array($status, ['attivo', 'scaduto', 'bloccato'])) {
-        $errors[] = "Stato dello SkiPass non valido.";
-    }
-
-    if (empty($errors)) {
-        // Inserimento nel database
-        $stmt = $conn->prepare("INSERT INTO skipasses (user_id, skipass_price_id, validity_start_date, validity_end_date, area, status, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
-        if (!$stmt) {
-            $_SESSION['error'] = "Errore nella preparazione della query: " . $conn->error;
-        } else {
-            $stmt->bind_param("iissss", $user_id, $skipass_price_id, $validity_start_date, $validity_end_date, $area, $status);
-            if ($stmt->execute()) {
-                $_SESSION['success'] = "SkiPass aggiunto con successo.";
-            } else {
-                $_SESSION['error'] = "Errore nell'aggiunta dello SkiPass: " . $stmt->error;
-            }
-            $stmt->close();
-        }
-    } else {
-        $_SESSION['error'] = implode("<br>", $errors);
-    }
-
-    header("Location: emission.php");
-    exit();
+// Verifica se l'utente è loggato
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    header('Location: login.php');
+    exit;
 }
 
-// Recupera SkiPass
-$stmt = $conn->prepare("
-    SELECT 
-        skipasses.id, 
-        skipass_prices.type, 
-        skipass_prices.price, 
-        skipasses.validity_start_date, 
-        skipasses.validity_end_date, 
-        skipasses.area, 
-        skipasses.status, 
-        skipasses.created_at,
-        users.name,
-        users.surname
-    FROM skipasses
-    LEFT JOIN skipass_prices ON skipasses.skipass_price_id = skipass_prices.id
-    LEFT JOIN users ON skipasses.user_id = users.id
-    ORDER BY skipasses.created_at DESC
-");
-if (!$stmt) {
-    die("Errore nella preparazione della query: " . $conn->error);
-}
-$stmt->execute();
-$result = $stmt->get_result();
-$skipasses = $result->fetch_all(MYSQLI_ASSOC);
-$stmt->close();
+// Connessione al database
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "skipassmanagement";
 
-// Recupera utenti per il selettore
+$conn = new mysqli($servername, $username, $password, $dbname);
+
+// Verifica connessione
+if ($conn->connect_error) {
+    die("Connessione al database fallita: " . $conn->connect_error);
+}
+
+// Imposta la codifica dei caratteri
+$conn->set_charset("utf8");
+
+// Recupera utenti
 $user_stmt = $conn->prepare("SELECT id, name, surname FROM users ORDER BY name ASC, surname ASC");
 if (!$user_stmt) {
     die("Errore nella preparazione della query: " . $conn->error);
@@ -88,15 +40,82 @@ $user_result = $user_stmt->get_result();
 $users = $user_result->fetch_all(MYSQLI_ASSOC);
 $user_stmt->close();
 
-// Recupera prezzi degli skipass per il selettore
-$price_stmt = $conn->prepare("SELECT id, type, price FROM skipass_prices ORDER BY type ASC");
-if (!$price_stmt) {
-    die("Errore nella preparazione della query: " . $conn->error);
+// Recupera skipasses
+$result = $conn->query("SELECT * FROM skipasses");
+$skipasses = $result->fetch_all(MYSQLI_ASSOC);
+$result->close();
+
+// Processamento del form
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_skipass'])) {
+    // Recupero dei dati dal form
+    $user_id = intval($_POST['user_id']);
+    $category = $conn->real_escape_string($_POST['category']);
+    $age_group = $conn->real_escape_string($_POST['age_group']);
+    $validity_start_date = $_POST['validity_start_date'];
+    $validity_end_date = $_POST['validity_end_date'];
+    $area = $conn->real_escape_string($_POST['area']);
+    $discount_type = isset($_POST['discount_type']) ? $conn->real_escape_string($_POST['discount_type']) : 'none';
+    $status = $conn->real_escape_string($_POST['status']);
+
+    // Determina la tabella da cui recuperare il prezzo
+    if ($discount_type !== 'none') {
+        // Recupera il prezzo dalla tabella 'skipass_prices' con discount_type specifico
+        $price_stmt = $conn->prepare("SELECT id, price FROM skipass_prices WHERE discount_type = ? AND category = ? AND age_group = ?");
+        if (!$price_stmt) {
+            $_SESSION['error'] = "Errore nella preparazione della query: " . $conn->error;
+            header("Location: emission.php");
+            exit;
+        }
+        $price_stmt->bind_param("sss", $discount_type, $category, $age_group);
+    } else {
+        // Recupera il prezzo dalla tabella 'skipass_prices' senza sconto
+        $price_stmt = $conn->prepare("SELECT id, price FROM skipass_prices WHERE discount_type = 'none' AND category = ? AND age_group = ?");
+        if (!$price_stmt) {
+            $_SESSION['error'] = "Errore nella preparazione della query: " . $conn->error;
+            header("Location: emission.php");
+            exit;
+        }
+        $price_stmt->bind_param("ss", $category, $age_group);
+    }
+
+    $price_stmt->execute();
+    $price_result = $price_stmt->get_result();
+
+    if ($price_result->num_rows === 0) {
+        $_SESSION['error'] = "Tariffa non valida per la combinazione selezionata.";
+        $price_stmt->close();
+        header("Location: emission.php");
+        exit;
+    }
+
+    $price_row = $price_result->fetch_assoc();
+    $skipass_price_id = intval($price_row['id']);
+    $final_price = floatval($price_row['price']);
+    $price_stmt->close();
+
+    // Inserimento nel database
+    $insert_stmt = $conn->prepare("INSERT INTO skipasses (user_id, skipass_price_id, category, age_group, validity_start_date, validity_end_date, area, discount_type, price, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    if (!$insert_stmt) {
+        $_SESSION['error'] = "Errore nella preparazione della query di inserimento: " . $conn->error;
+        header("Location: emission.php");
+        exit;
+    }
+    $insert_stmt->bind_param("iissssssds", $user_id, $skipass_price_id, $category, $age_group, $validity_start_date, $validity_end_date, $area, $discount_type, $final_price, $status);
+
+    if ($insert_stmt->execute()) {
+        $_SESSION['success'] = "SkiPass emesso con successo!";
+    } else {
+        $_SESSION['error'] = "Errore nell'emissione dello SkiPass: " . $insert_stmt->error;
+    }
+
+    $insert_stmt->close();
+
+    // Reindirizzamento
+    header("Location: emission.php");
+    exit;
 }
-$price_stmt->execute();
-$price_result = $price_stmt->get_result();
-$prices = $price_result->fetch_all(MYSQLI_ASSOC);
-$price_stmt->close();
+
+$conn->close();
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -146,6 +165,9 @@ $price_stmt->close();
         .btn-primary {
             transition: background-color 0.3s, transform 0.3s;
         }
+        .card-text, .card-title {
+            color: #000; /* Imposta il colore del testo a nero */
+        }
         .btn-primary:hover {
             transform: scale(1.05);
             background-color: #0056b3;
@@ -186,37 +208,34 @@ $price_stmt->close();
         </div>
     </nav>
 
-    <div class="container my-5">
-        <!-- Messaggi di Successo/Errori -->
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <div class="container mt-5">
+        <!-- Messaggi di Successo o Errore -->
+        <?php if(isset($_SESSION['success'])): ?>
+            <div class="alert alert-success">
                 <?php 
                     echo $_SESSION['success']; 
                     unset($_SESSION['success']);
                 ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         <?php endif; ?>
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <?php if(isset($_SESSION['error'])): ?>
+            <div class="alert alert-danger">
                 <?php 
                     echo $_SESSION['error']; 
                     unset($_SESSION['error']);
                 ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         <?php endif; ?>
-
-        <h2 class="text-secondary mb-4">Emissione SkiPass</h2>
 
         <!-- Form Aggiungi SkiPass -->
         <div class="card mb-4 p-4 shadow-sm">
             <h3 class="text-primary mb-3">Aggiungi Nuovo SkiPass</h3>
             <form method="POST" action="emission.php">
                 <input type="hidden" name="add_skipass" value="1">
+
                 <div class="mb-3">
-                    <label for="user_id" class="form-label">Utente</label>
-                    <select class="form-select" id="user_id" name="user_id" required>
+                    <label for="user_id" class="form-label text-dark">Utente</label>
+                    <select class="form-select text-dark" id="user_id" name="user_id" required>
                         <option value="">Seleziona Utente</option>
                         <?php foreach ($users as $user): ?>
                             <option value="<?php echo $user['id']; ?>">
@@ -225,38 +244,69 @@ $price_stmt->close();
                         <?php endforeach; ?>
                     </select>
                 </div>
+
+                <!-- Selezione Categoria -->
                 <div class="mb-3">
-                    <label for="skipass_price_id" class="form-label">Tipo di SkiPass</label>
-                    <select class="form-select" id="skipass_price_id" name="skipass_price_id" required>
-                        <option value="">Seleziona Tipo</option>
-                        <?php foreach ($prices as $price): ?>
-                            <option value="<?php echo $price['id']; ?>">
-                                <?php echo htmlspecialchars(ucfirst($price['type'])) . " - €" . number_format($price['price'], 2); ?>
-                            </option>
-                        <?php endforeach; ?>
+                    <label for="category" class="form-label text-dark">Categoria SkiPass</label>
+                    <select class="form-select text-dark" id="category" name="category" required>
+                        <option value="">Seleziona Categoria</option>
+                        <option value="Giornaliero">Giornaliero</option>
+                        <option value="2 Giorni">2 Giorni</option>
+                        <option value="3 Giorni">3 Giorni</option>
+                        <option value="Settimanale (6 Giorni)">Settimanale (6 Giorni)</option>
+                        <option value="Stagionale">Stagionale</option>
                     </select>
                 </div>
+
+                <!-- Selezione Fascia di Età -->
                 <div class="mb-3">
-                    <label for="validity_start_date" class="form-label">Data Inizio Validità</label>
-                    <input type="date" class="form-control" id="validity_start_date" name="validity_start_date" required>
+                    <label for="age_group" class="form-label text-dark">Fascia di Età</label>
+                    <select class="form-select text-dark" id="age_group" name="age_group" required>
+                        <option value="">Seleziona Fascia di Età</option>
+                        <option value="Adulti">Adulti</option>
+                        <option value="Junior">Junior (fino a 16 anni)</option>
+                        <option value="Senior">Senior (oltre 65 anni)</option>
+                        <option value="Baby">Baby (fino a 8 anni)</option>
+                    </select>
                 </div>
+
                 <div class="mb-3">
-                    <label for="validity_end_date" class="form-label">Data Fine Validità</label>
-                    <input type="date" class="form-control" id="validity_end_date" name="validity_end_date" required>
+                    <label for="validity_start_date" class="form-label text-dark">Data Inizio Validità</label>
+                    <input type="date" class="form-control text-dark" id="validity_start_date" name="validity_start_date" required>
                 </div>
+
                 <div class="mb-3">
-                    <label for="area" class="form-label">Area</label>
-                    <input type="text" class="form-control" id="area" name="area" required>
+                    <label for="validity_end_date" class="form-label text-dark">Data Fine Validità</label>
+                    <input type="date" class="form-control text-dark" id="validity_end_date" name="validity_end_date" required>
                 </div>
+
                 <div class="mb-3">
-                    <label for="status" class="form-label">Stato</label>
-                    <select class="form-select" id="status" name="status" required>
+                    <label for="area" class="form-label text-dark">Area</label>
+                    <input type="text" class="form-control text-dark" id="area" name="area" required>
+                </div>
+
+                <!-- Selezione Tipo di Sconto -->
+                <div class="mb-3">
+                    <label class="form-label text-dark">Scegli il Tipo di Sconto</label>
+                    <select class="form-select text-dark" id="discount_type" name="discount_type" required>
+                        <option value="none">Nessuno</option>
+                        <option value="fisi">Tesserato FISI</option>
+                        <option value="maestro">Maestro di Sci</option>
+                        <option value="disabile">Persone con Disabilità</option>
+                        <option value="disabile_accompagnatore">Accompagnatore Disabilità Visiva</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="status" class="form-label text-dark">Stato</label>
+                    <select class="form-select text-dark" id="status" name="status" required>
+                        <option value="">Seleziona Stato</option>
                         <option value="attivo">Attivo</option>
-                        <option value="scaduto">Scaduto</option>
-                        <option value="bloccato">Bloccato</option>
+                        <option value="inattivo">Inattivo</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-success">Aggiungi SkiPass</button>
+
+                <button type="submit" class="btn btn-success">Emetti SkiPass</button>
             </form>
         </div>
 
@@ -265,28 +315,27 @@ $price_stmt->close();
             <?php foreach ($skipasses as $skipass): ?>
                 <div class="col-md-4">
                     <div class="skipass skipass-card card mb-3 p-3 shadow-sm">
-                        <h3 class="card-title skipass-title"><?php echo htmlspecialchars(ucfirst($skipass['type'])); ?></h3>
-                        <p class="card-text skipass-text">
-                            <strong>Utente:</strong> <?php echo htmlspecialchars($skipass['name'] . ' ' . $skipass['surname']); ?><br>
-                            <strong>Prezzo:</strong> €<?php echo number_format($skipass['price'], 2); ?><br>
-                            <strong>Validità:</strong> <?php echo htmlspecialchars($skipass['validity_start_date']); ?> - <?php echo htmlspecialchars($skipass['validity_end_date']); ?><br>
-                            <strong>Area:</strong> <?php echo htmlspecialchars($skipass['area']); ?><br>
-                            <strong>Stato:</strong> <?php echo htmlspecialchars(ucfirst($skipass['status'])); ?>
-                        </p>
-                        <small class="text-muted">Creato il: <?php echo htmlspecialchars($skipass['created_at']); ?></small>
+                        <h5 class="card-title">SkiPass ID: <?php echo htmlspecialchars($skipass['id']); ?></h5>
+                        <p class="card-text"><strong>Utente ID:</strong> <?php echo htmlspecialchars($skipass['user_id']); ?></p>
+                        <p class="card-text"><strong>Categoria:</strong> <?php echo htmlspecialchars($skipass['category']); ?></p>
+                        <p class="card-text"><strong>Fascia di Età:</strong> <?php echo htmlspecialchars($skipass['age_group']); ?></p>
+                        <p class="card-text"><strong>Validità:</strong> <?php echo htmlspecialchars($skipass['validity_start_date']) . " a " . htmlspecialchars($skipass['validity_end_date']); ?></p>
+                        <p class="card-text"><strong>Area:</strong> <?php echo htmlspecialchars($skipass['area']); ?></p>
+                        <p class="card-text"><strong>Sconto:</strong> <?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $skipass['discount_type']))); ?></p>
+                        <p class="card-text"><strong>Prezzo:</strong> €<?php echo number_format($skipass['price'], 2); ?></p>
+                        <p class="card-text"><strong>Stato:</strong> <?php echo htmlspecialchars($skipass['status']); ?></p>
                     </div>
                 </div>
             <?php endforeach; ?>
         </div>
     </div>
-
     <script>
         // Toggle Dark Mode
         document.addEventListener('DOMContentLoaded', function () {
             const toggleDarkMode = document.getElementById('toggle-dark-mode');
             const body = document.body;
 
-            // Check for saved dark mode preference
+            // Controlla la preferenza di dark mode salvata
             if (localStorage.getItem('darkMode') === 'enabled') {
                 body.classList.add('dark-mode');
                 toggleDarkMode.innerHTML = '<i class="fas fa-sun"></i>';
@@ -306,6 +355,5 @@ $price_stmt->close();
             });
         });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -3,6 +3,20 @@
 
 session_start();
 
+// Controllo accesso: solo utenti loggati e admin possono accedere
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    $_SESSION['error_message'] = 'Devi effettuare il login per accedere a questa pagina.';
+    header('Location: login.php');
+    exit;
+}
+
+// Verifica se l'utente è un amministratore
+if (!isset($_SESSION['role']) || strtolower($_SESSION['role']) !== 'admin') {
+    $_SESSION['error_message'] = 'Non hai i permessi necessari per accedere a questa pagina.';
+    header('Location: dashboard.php');
+    exit;
+}
+
 // Connessione al database
 $servername = "localhost";
 $username = "root";
@@ -87,13 +101,6 @@ $conn->close();
         .chart-container {
             position: relative;
             margin: auto;
-            height: 250px;
-            width: 250px;
-        }
-        /* Classe per Grafici Più Piccoli */
-        .small-chart-container {
-            position: relative;
-            margin: auto;
             height: 200px;
             width: 200px;
         }
@@ -149,7 +156,7 @@ $conn->close();
                     <div class="card">
                         <div class="card-header bg-success text-white">Vendite per Tipologia</div>
                         <div class="card-body d-flex justify-content-center">
-                            <div class="small-chart-container">
+                            <div class="chart-container">
                                 <canvas id="salesPieChart"></canvas>
                             </div>
                         </div>
@@ -160,7 +167,7 @@ $conn->close();
                     <div class="card">
                         <div class="card-header bg-warning text-white">Ricavi per Tipologia</div>
                         <div class="card-body d-flex justify-content-center">
-                            <div class="small-chart-container">
+                            <div class="chart-container">
                                 <canvas id="revenuePieChart"></canvas>
                             </div>
                         </div>
@@ -171,7 +178,7 @@ $conn->close();
                     <div class="card">
                         <div class="card-header bg-secondary text-white">Ricavi per Tipo di Sconto</div>
                         <div class="card-body d-flex justify-content-center">
-                            <div class="small-chart-container">
+                            <div class="chart-container">
                                 <canvas id="revenueDiscountPieChart"></canvas>
                             </div>
                         </div>

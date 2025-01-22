@@ -1,65 +1,58 @@
 <?php
-// filepath: /c:/xampp/htdocs/5IE-TEP/Gestionale-skipass/login.php
+// filepath: /c:/xampp/htdocs/Gestionale-skipass/login.php
+
 session_start();
 
 // Connessione al database
 $servername = "localhost";
-$db_username = "root";
-$db_password = "";
+$username = "root";
+$password = "";
 $dbname = "skipassmanagement";
 
-$conn = new mysqli($servername, $db_username, $db_password, $dbname);
+$conn = new mysqli($servername, $username, $password, $dbname);
 
+// Verifica connessione
 if ($conn->connect_error) {
-    die("Connessione fallita: " . $conn->connect_error);
+    die("Connessione al database fallita: " . $conn->connect_error);
 }
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $email = trim($_POST['email']);
-    $password = trim($_POST['password']);
-
-    $errors = [];
-
-    if (empty($email) || empty($password)) {
-        $errors[] = 'Tutti i campi sono obbligatori.';
-    }
-
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = 'Email non valida.';
-    }
-
-    if (empty($errors)) {
-        $sql = "SELECT * FROM users WHERE email = ?";
-        $stmt = $conn->prepare($sql);
-        if ($stmt === false) {
-            die("Errore nella preparazione della query: " . htmlspecialchars($conn->error));
-        }
-
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        if ($result->num_rows == 1) {
-            $row = $result->fetch_assoc();
-            if (password_verify($password, $row['password'])) {
-                $_SESSION['loggedin'] = true;
-                $_SESSION['username'] = $row['username'];
-                $_SESSION['name'] = $row['name'];
-                $_SESSION['role'] = $row['role']; // Memorizza il ruolo nella sessione
-                header('Location: dashboard.php');
-                exit();
-            } else {
-                $errors[] = "Password errata.";
-            }
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $email = $_POST['email'];
+    $password_input = $_POST['password'];
+    
+    // Prepara e esegui la query di selezione
+    $stmt = $conn->prepare("SELECT id, name, password, role FROM users WHERE email = ?");
+    $stmt->bind_param("s", $email);
+    $stmt->execute();
+    $stmt->store_result();
+    
+    // Verifica se l'utente esiste
+    if ($stmt->num_rows === 1) {
+        $stmt->bind_result($id, $name, $hashed_password, $role);
+        $stmt->fetch();
+        
+        // Verifica la password
+        if (password_verify($password_input, $hashed_password)) {
+            // Salva i dati nella sessione
+            $_SESSION['loggedin'] = true;
+            $_SESSION['id'] = $id;          // Assicurati che questa chiave esista
+            $_SESSION['name'] = $name;
+            $_SESSION['role'] = $role;
+            
+            // Reindirizza alla dashboard
+            header("Location: dashboard.php");
+            exit;
         } else {
-            $errors[] = "Nessun utente trovato con questa email.";
+            $error = "Password non valida.";
         }
-
-        $stmt->close();
+    } else {
+        $error = "Nessun utente trovato con questa email.";
     }
-
-    $conn->close();
+    
+    $stmt->close();
 }
+
+$conn->close();
 ?>
 <!DOCTYPE html>
 <html lang="it">

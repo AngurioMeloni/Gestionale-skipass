@@ -133,10 +133,8 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
                         <h5 class="card-title">Vendita e gestione degli skipass</h5>
                         <ul class="list-unstyled">
                             <li><a href="emission.php" class="btn btn-link">Emissione di skipass</a></li>
-                            <li><a href="#" class="btn btn-link">Personalizzazione degli skipass</a></li>
-                            <li><a href="#" class="btn btn-link">Prenotazioni online</a></li>
-                            <li><a href="#" class="btn btn-link">Ricariche online</a></li>
-                        </ul>
+                            <li><a href="assistenza.php" class="btn btn-link">Assistenza</a></li>
+                            <li><a href="rispondi_assistenza.php" class="btn btn-link">Risposte Assistenza</a></li>
                     </div>
                 </div>
             </div>
@@ -149,8 +147,8 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
                             <li class="nav-item">
                             <a class="nav-link" href="finanza.php">Report Finanziari</a>
                             </li>
-                            <li><a href="#" class="btn btn-link">Analisi dati</a></li>
-                            <li><a href="#" class="btn btn-link">Gestione fiscale</a></li>
+                            <li><a href="analisi_datiM.php" class="btn btn-link">Analisi dati</a></li>
+                            <li><a href="Gestione_fiscale.php" class="btn btn-link">Gestione fiscale</a></li>
                         </ul>
                     </div>
                 </div>

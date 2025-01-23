@@ -160,8 +160,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
                         <h5 class="card-title">Gestione utenti</h5>
                         <ul class="list-unstyled">
                             <li><a href="databaseC.php" class="btn btn-link">Database clienti</a></li>
-                            <li><a href="#" class="btn btn-link">Fidelity program</a></li>
-                            <li><a href="#" class="btn btn-link">Gestione gruppi</a></li>
+                            <li><a href="fidelty_program.php" class="btn btn-link">Fidelity program</a></li>
                         </ul>
                     </div>
                 </div>
